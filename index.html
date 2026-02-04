@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TorchFold - A PyTorch Reimplementation of AlphaFold3</title>
+    
+    <!-- Fonts: Inter (Modern Sans-serif) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- SeedFold Theme Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563EB', // Tech Blue
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        dark: {
+                            900: '#111827',
+                            800: '#1F2937', // Deep Gray
+                            600: '#4B5563',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
+                        'hover': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar for Table */
+        .scrollbar-hide::-webkit-scrollbar {
+            height: 6px;
+        }
+        .scrollbar-hide::-webkit-scrollbar-track {
+            background: #f9fafb; 
+        }
+        .scrollbar-hide::-webkit-scrollbar-thumb {
+            background: #d1d5db; 
+            border-radius: 4px;
+        }
+        .scrollbar-hide::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af; 
+        }
+        
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-dark-800 antialiased selection:bg-brand-100 selection:text-brand-900">
+
+    <!-- Navbar -->
+    <nav class="w-full bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <img src="logo.png" alt="TorchFold" class="h-8">
+            </div>
+            <div class="hidden md:flex gap-6 text-sm font-medium text-dark-600">
+                <a href="#contributions" class="hover:text-brand-600 transition-colors">Features</a>
+                <a href="#numerical-alignment" class="hover:text-brand-600 transition-colors">Alignment</a>
+                <a href="#inference-performance" class="hover:text-brand-600 transition-colors">Performance</a>
+                <a href="#benchmarks" class="hover:text-brand-600 transition-colors">Benchmarks</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 1. Hero Section -->
+    <section class="pt-24 pb-20 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold uppercase tracking-wide mb-8">
+                <span class="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
+                New Release
+            </div>
+            
+            <!-- Title -->
+            <h1 class="text-5xl md:text-6xl font-bold text-dark-900 tracking-tight leading-[1.1] mb-6">
+                TorchFold: A PyTorch & NPU <br class="hidden md:block"/> Compatible AlphaFold3
+            </h1>
+            
+            <!-- Slogan -->
+            <p class="text-xl md:text-2xl text-dark-600 font-medium mb-8">
+                Democratizing biomolecular modeling with a native PyTorch implementation.
+            </p>
+            
+            <!-- Abstract -->
+            <p class="text-dark-600 leading-relaxed max-w-2xl mx-auto mb-10 text-lg">
+                TorchFold overcomes the framework dependencies and restrictive licensing of AlphaFold3. 
+                We provide a complete PyTorch reimplementation optimized for both NVIDIA GPUs and Huawei Ascend NPUs, 
+                achieving state-of-the-art performance with commercially friendly open weights.
+            </p>
+            
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#" class="px-8 py-3 rounded-full bg-brand-600 text-white font-semibold shadow-lg shadow-brand-500/30 hover:bg-brand-700 hover:scale-105 transition-all duration-200 w-full sm:w-auto">
+                    <i class="fa-regular fa-file-pdf mr-2"></i> View Technical Report
+                </a>
+                <a href="https://github.com/cmclab-torchfold/torchfold" class="px-8 py-3 rounded-full bg-white text-dark-900 font-semibold border border-gray-200 shadow-sm hover:border-brand-300 hover:text-brand-600 hover:shadow-md transition-all duration-200 w-full sm:w-auto">
+                    <i class="fa-brands fa-github mr-2"></i> View Code
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Key Contributions -->
+    <section id="contributions" class="py-20 bg-white border-y border-gray-100">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-dark-900 mb-12 text-center">Key Contributions</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="group bg-white p-8 rounded-2xl border border-gray-100 shadow-soft hover:shadow-hover transition-all duration-300">
+                    <div class="w-12 h-12 bg-brand-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-brand-600 transition-colors duration-300">
+                        <i class="fa-brands fa-python text-2xl text-brand-600 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark-900 mb-3">Native PyTorch</h3>
+                    <p class="text-dark-600 leading-relaxed">
+                        A complete migration from JAX/Haiku to native <code>nn.Module</code>. Enables seamless integration with the broader deep learning ecosystem.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="group bg-white p-8 rounded-2xl border border-gray-100 shadow-soft hover:shadow-hover transition-all duration-300">
+                    <div class="w-12 h-12 bg-brand-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-brand-600 transition-colors duration-300">
+                        <i class="fa-solid fa-microchip text-2xl text-brand-600 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark-900 mb-3">NPU Optimization</h3>
+                    <p class="text-dark-600 leading-relaxed">
+                        Optimized for Huawei Ascend NPUs via CANN backend, featuring fused attention operators for high-performance inference.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="group bg-white p-8 rounded-2xl border border-gray-100 shadow-soft hover:shadow-hover transition-all duration-300">
+                    <div class="w-12 h-12 bg-brand-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-brand-600 transition-colors duration-300">
+                        <i class="fa-solid fa-lock-open text-2xl text-brand-600 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark-900 mb-3">Open License</h3>
+                    <p class="text-dark-600 leading-relaxed">
+                        We release commercially friendly model weights under the MIT license, removing barriers for industry research and deployment.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Results Section Container -->
+    <div class="bg-gray-50 pb-24">
+        
+        <!-- 3.1 Numerical Alignment -->
+        <section id="numerical-alignment" class="py-20 px-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-dark-900 mb-4">Numerical Alignment with AF3</h2>
+                    <p class="text-dark-600 max-w-2xl mx-auto">
+                        Validating faithful reproduction of the original AF3 implementation across protein monomers and antibody-antigen complexes.
+                    </p>
+                </div>
+
+                <!-- Table 1: Protein Monomer -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-12">
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                        <h3 class="font-bold text-dark-900">Protein Monomer Metrics</h3>
+                    </div>
+                    <div class="overflow-x-auto scrollbar-hide">
+                        <table class="w-full text-left border-collapse min-w-[900px]">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <th class="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Metric</th>
+                                    <th class="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Method</th>
+                                    <th class="py-4 px-3 text-xs font-semibold text-gray-500 uppercase text-right">L=37</th>
+                                    <th class="py-4 px-3 text-xs font-semibold text-gray-500 uppercase text-right">L=301</th>
+                                    <th class="py-4 px-3 text-xs font-semibold text-gray-500 uppercase text-right">L=583</th>
+                                    <th class="py-4 px-3 text-xs font-semibold text-gray-500 uppercase text-right">L=1024</th>
+                                    <th class="py-4 px-3 text-xs font-semibold text-gray-500 uppercase text-right">L=1491</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm">
+                                <!-- pTM -->
+                                <tr class="group hover:bg-gray-50">
+                                    <td rowspan="3" class="py-4 px-6 font-medium text-dark-900 bg-gray-50/50 align-top pt-5 border-r border-gray-100 w-32">pTM</td>
+                                    <td class="py-3 px-6 text-gray-600">AF3</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.69</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.93</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.98</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.96</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.95</td>
+                                </tr>
+                                <tr class="group hover:bg-gray-50">
+                                    <td class="py-3 px-6 text-gray-600">TorchFold (GPU)</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.67</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.93</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.98</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.96</td>
+                                    <td class="py-3 px-3 text-right text-red-500 text-xs font-bold">OOM</td>
+                                </tr>
+                                <tr class="bg-brand-50/30 border-l-4 border-l-brand-600">
+                                    <td class="py-3 px-6 font-semibold text-brand-700">TorchFold (NPU)</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.68</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.93</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.98</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.96</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.95</td>
+                                </tr>
+
+                                <!-- Divider -->
+                                <tr class="h-2 bg-gray-50/50"><td colspan="7"></td></tr>
+
+                                <!-- RMSD Ca -->
+                                <tr class="group hover:bg-gray-50">
+                                    <td rowspan="3" class="py-4 px-6 font-medium text-dark-900 bg-gray-50/50 align-top pt-5 border-r border-gray-100">RMSD<sub>Cα</sub></td>
+                                    <td class="py-3 px-6 text-gray-600">AF3</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.73</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.31</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.26</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.25</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.62</td>
+                                </tr>
+                                <tr class="group hover:bg-gray-50">
+                                    <td class="py-3 px-6 text-gray-600">TorchFold (GPU)</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.67</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.31</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.26</td>
+                                    <td class="py-3 px-3 text-right text-gray-600">0.29</td>
+                                    <td class="py-3 px-3 text-right text-gray-400 text-xs">N/A</td>
+                                </tr>
+                                <tr class="bg-brand-50/30 border-l-4 border-l-brand-600">
+                                    <td class="py-3 px-6 font-semibold text-brand-700">TorchFold (NPU)</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.71</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.30</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.30</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.33</td>
+                                    <td class="py-3 px-3 text-right font-bold text-dark-900">0.61</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Table 2: Antibody-Antigen -->
+                <div class="grid grid-cols-1 lg:grid-cols-1 gap-8">
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <h3 class="font-bold text-dark-900">Antibody-Antigen Docking (PDB55)</h3>
+                            <span class="text-xs text-gray-500">Successful predictions / 55 cases</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[600px]">
+                                <thead>
+                                    <tr class="bg-gray-50 border-b border-gray-200">
+                                        <th class="py-3 px-6 text-xs font-bold text-gray-500 uppercase w-1/4">Method</th>
+                                        <th colspan="3" class="py-3 px-4 text-xs font-bold text-center text-gray-500 uppercase border-r border-gray-200">Top-1 DockQ</th>
+                                        <th colspan="3" class="py-3 px-4 text-xs font-bold text-center text-gray-500 uppercase">Coverage DockQ</th>
+                                    </tr>
+                                    <tr class="border-b border-gray-200 text-xs text-gray-400">
+                                        <th></th>
+                                        <th class="py-2 text-center">Acceptable</th>
+                                        <th class="py-2 text-center">Medium</th>
+                                        <th class="py-2 text-center border-r border-gray-100">High</th>
+                                        <th class="py-2 text-center">Acceptable</th>
+                                        <th class="py-2 text-center">Medium</th>
+                                        <th class="py-2 text-center">High</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 text-sm">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="py-4 px-6 font-medium text-gray-600">AF3</td>
+                                        <td class="text-center text-gray-600">27/55</td>
+                                        <td class="text-center text-gray-600">25/55</td>
+                                        <td class="text-center text-gray-600 border-r border-gray-100">14/55</td>
+                                        <td class="text-center text-gray-600">47/55</td>
+                                        <td class="text-center text-gray-600">33/55</td>
+                                        <td class="text-center text-gray-600">20/55</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="py-4 px-6 font-medium text-gray-600">TorchFold (GPU)</td>
+                                        <td class="text-center text-gray-600">29/55</td>
+                                        <td class="text-center text-gray-600">26/55</td>
+                                        <td class="text-center text-gray-600 border-r border-gray-100">14/55</td>
+                                        <td class="text-center text-gray-600">45/55</td>
+                                        <td class="text-center text-gray-600">33/55</td>
+                                        <td class="text-center text-gray-600">20/55</td>
+                                    </tr>
+                                    <tr class="bg-brand-50/30 border-l-4 border-l-brand-600">
+                                        <td class="py-4 px-6 font-bold text-brand-700">TorchFold (NPU)</td>
+                                        <td class="text-center font-bold text-dark-900">27/55</td>
+                                        <td class="text-center font-bold text-dark-900">26/55</td>
+                                        <td class="text-center font-bold text-dark-900 border-r border-gray-200">16/55</td>
+                                        <td class="text-center font-bold text-dark-900">45/55</td>
+                                        <td class="text-center font-bold text-dark-900">32/55</td>
+                                        <td class="text-center font-bold text-dark-900">20/55</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3.2 Inference Performance -->
+        <section id="inference-performance" class="py-20 px-6 bg-white border-y border-gray-100">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-dark-900 mb-4">Inference Performance</h2>
+                    <p class="text-dark-600 max-w-2xl mx-auto">
+                        Latency comparison (seconds). The NPU backend successfully handles sequences up to 2002 residues, whereas standard GPU implementations encounter OOM errors.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto scrollbar-hide">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <th class="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Method</th>
+                                    <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase text-right">37</th>
+                                    <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase text-right">107</th>
+                                    <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase text-right">301</th>
+                                    <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase text-right">436</th>
+                                    <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase text-right">583</th>
+                                    <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase text-right">1024</th>
+                                    <th class="py-4 px-4 text-xs font-bold text-brand-600 uppercase text-right bg-brand-50/50">2002</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-4 px-6 font-medium text-gray-600">AF3 (JAX, A100)</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">40.62</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">40.78</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">54.45</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">76.59</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">76.80</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">105.08</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums bg-brand-50/20">321.44</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-4 px-6 font-medium text-gray-600">TorchFold (GPU, A100)</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">39.89</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">66.51</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">77.51</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">110.27</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">164.69</td>
+                                    <td class="py-4 px-4 text-right text-gray-600 tabular-nums">467.83</td>
+                                    <td class="py-4 px-4 text-right text-red-500 font-bold text-xs bg-brand-50/20">OOM</td>
+                                </tr>
+                                <tr class="bg-brand-50/30 border-l-4 border-l-brand-600">
+                                    <td class="py-4 px-6 font-bold text-brand-700">TorchFold (NPU, Atlas)</td>
+                                    <td class="py-4 px-4 text-right font-bold text-dark-900 tabular-nums">42.68</td>
+                                    <td class="py-4 px-4 text-right font-bold text-dark-900 tabular-nums">43.72</td>
+                                    <td class="py-4 px-4 text-right font-bold text-dark-900 tabular-nums">50.40</td>
+                                    <td class="py-4 px-4 text-right font-bold text-dark-900 tabular-nums">60.45</td>
+                                    <td class="py-4 px-4 text-right font-bold text-dark-900 tabular-nums">79.91</td>
+                                    <td class="py-4 px-4 text-right font-bold text-dark-900 tabular-nums">163.76</td>
+                                    <td class="py-4 px-4 text-right font-bold text-brand-600 tabular-nums bg-brand-50/50">828.86</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3.3 Benchmark Comparison -->
+        <section id="benchmarks" class="py-20 px-6">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-dark-900 mb-4">FoldBench Comparison</h2>
+                    <p class="text-dark-600">
+                        Performance on diverse interface prediction tasks. Success rates reported as DockQ ≥ 0.23.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-soft border border-gray-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200">
+                                <th class="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Model</th>
+                                <th class="py-4 px-6 text-xs font-bold text-gray-500 uppercase text-right">Protein-Protein</th>
+                                <th class="py-4 px-6 text-xs font-bold text-gray-500 uppercase text-right">Antibody-Antigen</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-4 px-6 text-gray-600">AlphaFold3</td>
+                                <td class="py-4 px-6 text-right tabular-nums text-gray-800">72.93%</td>
+                                <td class="py-4 px-6 text-right tabular-nums text-gray-800">47.90%</td>
+                            </tr>
+                            <tr class="bg-blue-50/40">
+                                <td class="py-4 px-6 font-medium text-brand-700">TorchFold + AF3 weights</td>
+                                <td class="py-4 px-6 text-right tabular-nums font-semibold text-dark-900">72.69%</td>
+                                <td class="py-4 px-6 text-right tabular-nums font-semibold text-dark-900">45.45%</td>
+                            </tr>
+                            <tr class="bg-brand-50/80 border-l-4 border-l-brand-600">
+                                <td class="py-4 px-6 font-bold text-brand-700">TorchFold + Open Weights</td>
+                                <td class="py-4 px-6 text-right tabular-nums font-bold text-brand-700">72.69%</td>
+                                <td class="py-4 px-6 text-right tabular-nums font-bold text-brand-700">46.67%</td>
+                            </tr>
+                            <!-- Competitors -->
+                            <tr class="group hover:bg-gray-50 text-gray-500">
+                                <td class="py-3 px-6 pl-8 border-l-4 border-transparent text-gray-400">Boltz-1</td>
+                                <td class="py-3 px-6 text-right tabular-nums">68.25%</td>
+                                <td class="py-3 px-6 text-right tabular-nums">33.54%</td>
+                            </tr>
+                            <tr class="group hover:bg-gray-50 text-gray-500">
+                                <td class="py-3 px-6 pl-8 border-l-4 border-transparent text-gray-400">Chai-1</td>
+                                <td class="py-3 px-6 text-right tabular-nums">68.53%</td>
+                                <td class="py-3 px-6 text-right tabular-nums">23.64%</td>
+                            </tr>
+                            <tr class="group hover:bg-gray-50 text-gray-500">
+                                <td class="py-3 px-6 pl-8 border-l-4 border-transparent text-gray-400">HelixFold3</td>
+                                <td class="py-3 px-6 text-right tabular-nums">66.27%</td>
+                                <td class="py-3 px-6 text-right tabular-nums">28.40%</td>
+                            </tr>
+                            <tr class="group hover:bg-gray-50 text-gray-500">
+                                <td class="py-3 px-6 pl-8 border-l-4 border-transparent text-gray-400">Protenix</td>
+                                <td class="py-3 px-6 text-right tabular-nums">68.18%</td>
+                                <td class="py-3 px-6 text-right tabular-nums">34.13%</td>
+                            </tr>
+                            <tr class="group hover:bg-gray-50 text-gray-500">
+                                <td class="py-3 px-6 pl-8 border-l-4 border-transparent text-gray-400">OpenFold3</td>
+                                <td class="py-3 px-6 text-right tabular-nums">69.96%</td>
+                                <td class="py-3 px-6 text-right tabular-nums">28.83%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 4. Team Section -->
+    <section id="team" class="py-24 bg-white">
+        <div class="max-w-5xl mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold text-dark-900 mb-2">The TorchFold Team</h2>
+            <p class="text-gray-500 mb-12">A collaboration between Changping Laboratory and Huawei Technologies</p>
+            
+            <div class="mt-8 text-xs text-gray-400 space-y-1">
+                <p>† Correspondence: <a href="mailto:mingchenchen@cpl.ac.cn" class="hover:text-brand-600 transition-colors">mingchenchen@cpl.ac.cn</a></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-sm text-gray-500">
+                &copy; 2025 TorchFold Team. Released under MIT License.
+            </div>
+            <div class="flex gap-4">
+                <a href="#" class="text-gray-400 hover:text-brand-600 transition-colors"><i class="fa-brands fa-github text-xl"></i></a>
+                <a href="#" class="text-gray-400 hover:text-brand-600 transition-colors"><i class="fa-brands fa-twitter text-xl"></i></a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
